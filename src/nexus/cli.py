@@ -2,11 +2,11 @@
 
 import click
 
-from nexus_cli import __version__
-from nexus_cli.commands.download import download
-from nexus_cli.commands.search import search
-from nexus_cli.commands.upload import upload
-from nexus_cli.config import get_settings
+from nexus import __version__
+from nexus.commands.download import download
+from nexus.commands.search import search
+from nexus.commands.upload import upload
+from nexus.config import get_settings
 
 
 @click.group()

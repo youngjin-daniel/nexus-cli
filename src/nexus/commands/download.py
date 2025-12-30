@@ -6,9 +6,9 @@ from pathlib import Path
 
 import click
 
-from nexus_cli.client import NexusClient
-from nexus_cli.config import get_settings
-from nexus_cli.commands.search import perform_search
+from nexus.client import NexusClient
+from nexus.config import get_settings
+from nexus.commands.search import perform_search
 
 
 @click.command()

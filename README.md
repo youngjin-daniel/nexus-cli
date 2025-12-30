@@ -29,7 +29,7 @@ Download or build a standalone binary that works without Python installation:
 uv add --dev pyinstaller
 
 # Build standalone binary
-uv run pyinstaller --onefile --name nexus --clean src/nexus_cli/__main__.py
+uv run pyinstaller --onefile --name nexus --clean src/nexus/__main__.py
 
 # Binary will be created at dist/nexus
 ```
@@ -86,7 +86,7 @@ For end users who don't have Python installed:
 
 ```bash
 # Build standalone executable
-uv run pyinstaller --onefile --name nexus --clean src/nexus_cli/__main__.py
+uv run pyinstaller --onefile --name nexus --clean src/nexus/__main__.py
 
 # Output: dist/nexus (macOS/Linux) or dist/nexus.exe (Windows)
 # File size: ~12MB (includes Python runtime and all dependencies)
@@ -267,21 +267,21 @@ nexus --host https://nexus.example.com -r my-repo search -p "pattern*"
 ```
 nexus_cli/
 ├── src/
-│   └── nexus_cli/
+│   └── nexus/              # Python package
 │       ├── __init__.py
-│       ├── __main__.py          # CLI entry point
-│       ├── cli.py               # Click CLI definition
+│       ├── __main__.py     # CLI entry point
+│       ├── cli.py          # Click CLI definition
 │       ├── client/
 │       │   ├── __init__.py
 │       │   └── nexus_client.py  # NexusClient class
 │       ├── commands/
 │       │   ├── __init__.py
-│       │   ├── upload.py        # Upload command
-│       │   ├── download.py      # Download command
-│       │   └── search.py        # Search command
+│       │   ├── upload.py   # Upload command
+│       │   ├── download.py # Download command
+│       │   └── search.py   # Search command
 │       ├── config/
 │       │   ├── __init__.py
-│       │   └── settings.py      # Configuration loader
+│       │   └── settings.py # Configuration loader
 │       └── utils/
 │           └── __init__.py
 ├── tests/
@@ -300,7 +300,7 @@ nexus_cli/
 uv run pytest tests/ -v
 
 # Run with coverage
-uv run pytest tests/ --cov=nexus_cli --cov-report=html
+uv run pytest tests/ --cov=nexus --cov-report=html
 
 # Run specific test
 uv run pytest tests/test_search.py -v

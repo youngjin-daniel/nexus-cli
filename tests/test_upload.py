@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from click.testing import CliRunner
 
-from nexus_cli.commands.upload import upload
+from nexus.commands.upload import upload
 
 
 @pytest.fixture
@@ -46,8 +46,8 @@ async def test_upload_component_basic(mock_client, temp_file):
 
 def test_upload_command_basic(cli_runner, mock_settings, temp_file):
     """Test upload command with basic parameters."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -72,8 +72,8 @@ def test_upload_command_basic(cli_runner, mock_settings, temp_file):
 
 def test_upload_command_with_custom_name(cli_runner, mock_settings, temp_file):
     """Test upload command with custom asset name."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -102,8 +102,8 @@ def test_upload_command_with_custom_name(cli_runner, mock_settings, temp_file):
 
 def test_upload_command_with_directory(cli_runner, mock_settings, temp_file):
     """Test upload command with custom directory."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -132,8 +132,8 @@ def test_upload_command_with_directory(cli_runner, mock_settings, temp_file):
 
 def test_upload_command_with_properties(cli_runner, mock_settings, temp_file):
     """Test upload command with properties."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -163,8 +163,8 @@ def test_upload_command_with_properties(cli_runner, mock_settings, temp_file):
 
 def test_upload_command_file_not_found(cli_runner, mock_settings):
     """Test upload command with non-existent file."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         mock_get_settings.return_value = mock_settings
         mock_client_instance = AsyncMock()
@@ -185,8 +185,8 @@ def test_upload_command_file_not_found(cli_runner, mock_settings):
 
 def test_upload_command_invalid_property_format(cli_runner, mock_settings, temp_file):
     """Test upload command with invalid property format."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         mock_get_settings.return_value = mock_settings
         mock_client_instance = AsyncMock()
@@ -206,8 +206,8 @@ def test_upload_command_invalid_property_format(cli_runner, mock_settings, temp_
 
 def test_upload_command_full_example(cli_runner, mock_settings, temp_file):
     """Test upload command with all parameters."""
-    with patch("nexus_cli.commands.upload.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.upload.NexusClient") as mock_client_class:
+    with patch("nexus.commands.upload.get_settings") as mock_get_settings, \
+         patch("nexus.commands.upload.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings

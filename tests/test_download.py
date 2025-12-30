@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from click.testing import CliRunner
 
-from nexus_cli.commands.download import download
+from nexus.commands.download import download
 from tests.conftest import async_iterator
 
 
@@ -38,7 +38,7 @@ def sample_assets():
 
 def test_download_command_no_pattern(cli_runner, mock_settings):
     """Test download command fails without pattern."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings:
+    with patch("nexus.commands.download.get_settings") as mock_get_settings:
         mock_get_settings.return_value = mock_settings
 
         # Run command without pattern
@@ -49,9 +49,9 @@ def test_download_command_no_pattern(cli_runner, mock_settings):
 
 def test_download_command_success(cli_runner, mock_settings, sample_assets):
     """Test download command successfully searches and downloads assets."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
-         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+    with patch("nexus.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus.commands.download.NexusClient") as mock_client_class, \
          patch("pathlib.Path.mkdir"), \
          tempfile.TemporaryDirectory() as tmpdir:
 
@@ -81,8 +81,8 @@ def test_download_command_success(cli_runner, mock_settings, sample_assets):
 
 def test_download_command_no_assets_found(cli_runner, mock_settings):
     """Test download command when no assets match the pattern."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.download.perform_search") as mock_perform_search:
+    with patch("nexus.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus.commands.download.perform_search") as mock_perform_search:
 
         mock_get_settings.return_value = mock_settings
         mock_perform_search.return_value = []
@@ -98,9 +98,9 @@ def test_download_command_no_assets_found(cli_runner, mock_settings):
 
 def test_download_command_multiple_patterns(cli_runner, mock_settings, sample_assets):
     """Test download command with multiple patterns."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
-         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+    with patch("nexus.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus.commands.download.NexusClient") as mock_client_class, \
          patch("pathlib.Path.mkdir"), \
          tempfile.TemporaryDirectory() as tmpdir:
 
@@ -145,9 +145,9 @@ def test_download_command_path_extraction(cli_runner, mock_settings):
 
 def test_download_command_with_repository(cli_runner, mock_settings, sample_assets):
     """Test download command with repository option."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
-         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+    with patch("nexus.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus.commands.download.NexusClient") as mock_client_class, \
          patch("pathlib.Path.mkdir"), \
          tempfile.TemporaryDirectory() as tmpdir:
 
@@ -173,9 +173,9 @@ def test_download_command_with_repository(cli_runner, mock_settings, sample_asse
 
 def test_download_command_debug_mode(cli_runner, mock_settings, sample_assets):
     """Test download command with debug mode."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
-         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+    with patch("nexus.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus.commands.download.NexusClient") as mock_client_class, \
          patch("pathlib.Path.mkdir"), \
          tempfile.TemporaryDirectory() as tmpdir:
 

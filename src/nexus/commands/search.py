@@ -4,8 +4,8 @@ import asyncio
 
 import click
 
-from nexus_cli.client import NexusClient
-from nexus_cli.config import get_settings
+from nexus.client import NexusClient
+from nexus.config import get_settings
 
 
 @click.command()

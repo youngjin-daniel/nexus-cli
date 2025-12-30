@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexus_cli.client import NexusClient
-from nexus_cli.config import Settings
+from nexus.client import NexusClient
+from nexus.config import Settings
 
 
 @pytest.fixture

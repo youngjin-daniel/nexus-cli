@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from click.testing import CliRunner
 
-from nexus_cli.commands.search import search
+from nexus.commands.search import search
 from tests.conftest import async_iterator
 
 
@@ -38,8 +38,8 @@ def sample_assets():
 
 def test_search_command_success(cli_runner, mock_settings, sample_assets):
     """Test search command outputs matching paths."""
-    with patch("nexus_cli.commands.search.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.search.NexusClient") as mock_client_class:
+    with patch("nexus.commands.search.get_settings") as mock_get_settings, \
+         patch("nexus.commands.search.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -71,7 +71,7 @@ def test_search_command_success(cli_runner, mock_settings, sample_assets):
 
 def test_search_command_no_pattern(cli_runner, mock_settings):
     """Test search command fails without pattern."""
-    with patch("nexus_cli.commands.search.get_settings") as mock_get_settings:
+    with patch("nexus.commands.search.get_settings") as mock_get_settings:
         mock_get_settings.return_value = mock_settings
 
         # Run command without pattern
@@ -82,8 +82,8 @@ def test_search_command_no_pattern(cli_runner, mock_settings):
 
 def test_search_command_multiple_patterns(cli_runner, mock_settings, sample_assets):
     """Test search command with multiple patterns."""
-    with patch("nexus_cli.commands.search.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.search.NexusClient") as mock_client_class:
+    with patch("nexus.commands.search.get_settings") as mock_get_settings, \
+         patch("nexus.commands.search.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -114,8 +114,8 @@ def test_search_command_multiple_patterns(cli_runner, mock_settings, sample_asse
 
 def test_search_command_debug_mode(cli_runner, mock_settings, sample_assets):
     """Test search command with debug mode."""
-    with patch("nexus_cli.commands.search.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.search.NexusClient") as mock_client_class:
+    with patch("nexus.commands.search.get_settings") as mock_get_settings, \
+         patch("nexus.commands.search.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
