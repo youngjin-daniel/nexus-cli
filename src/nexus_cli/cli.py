@@ -4,7 +4,6 @@ import click
 
 from nexus_cli import __version__
 from nexus_cli.commands.download import download
-from nexus_cli.commands.list import list_assets
 from nexus_cli.commands.search import search
 from nexus_cli.commands.upload import upload
 from nexus_cli.config import get_settings
@@ -28,6 +27,12 @@ from nexus_cli.config import get_settings
     help="Nexus password for authentication",
 )
 @click.option(
+    "--repository",
+    "-r",
+    envvar="NEXUS_REPOSITORY",
+    help="Default repository name (default: from NEXUS_REPOSITORY env or 'my-repo')",
+)
+@click.option(
     "--timeout",
     type=int,
     envvar="NEXUS_TIMEOUT",
@@ -39,7 +44,7 @@ from nexus_cli.config import get_settings
     help="Disable SSL certificate verification",
 )
 @click.pass_context
-def main(ctx, host, username, password, timeout, no_verify_ssl):
+def main(ctx, host, repository, username, password, timeout, no_verify_ssl):
     """Nexus Repository Manager CLI Tool.
 
     A command-line interface for interacting with Nexus Repository Manager.
@@ -47,20 +52,22 @@ def main(ctx, host, username, password, timeout, no_verify_ssl):
 
     \b
     Configuration:
-    - Settings can be provided via CLI options, environment variables, or config file
-    - Config file location: ~/.nexus/config.toml
-    - Environment variables: NEXUS_HOST, NEXUS_USER, NEXUS_PASS, NEXUS_TIMEOUT
+    - Settings MUST be provided via CLI options or environment variables
+    - Required: NEXUS_HOST, NEXUS_REPOSITORY
+    - Optional: NEXUS_USER, NEXUS_PASS, NEXUS_TIMEOUT
 
     \b
     Examples:
-        nexus search --repository maven-releases --name myapp
-        nexus download --repository raw-hosted --asset-path /data/file.txt --output ./
+        nexus --host https://nexus.example.com -r my-repo search -p "MyProject/build_*artifact.zip"
+        nexus download -p "MyProject/build_*artifact.zip" -o ./downloads
         nexus upload --repository raw-hosted --file ./myfile.txt
     """
     # Prepare overrides from CLI options
     overrides = {}
     if host:
         overrides["host"] = host
+    if repository:
+        overrides["repository"] = repository
     if username:
         overrides["username"] = username
     if password:
@@ -71,12 +78,15 @@ def main(ctx, host, username, password, timeout, no_verify_ssl):
         overrides["verify_ssl"] = False
 
     # Store settings in context for commands
-    ctx.obj = get_settings(**overrides)
+    try:
+        ctx.obj = get_settings(**overrides)
+    except ValueError as e:
+        click.echo(f"Configuration Error: {e}", err=True)
+        ctx.exit(1)
 
 
 # Register commands
 main.add_command(search)
-main.add_command(list_assets)
 main.add_command(download)
 main.add_command(upload)
 

@@ -4,10 +4,30 @@ version = "0.1.0"
 description = "Nexus Repository Manager CLI Tool"
 readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["nexus", "repository", "cli", "artifact", "download"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Build Tools",
+]
 dependencies = [
     "httpx>=0.27.0",
     "click>=8.1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/nexus-cli"
+Repository = "https://github.com/yourusername/nexus-cli"
+Issues = "https://github.com/yourusername/nexus-cli/issues"
 
 [project.scripts]
 nexus = "nexus_cli.cli:main"
@@ -44,6 +64,7 @@ ignore = []
 
 [dependency-groups]
 dev = [
+    "pyinstaller>=6.17.0",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.0.0",

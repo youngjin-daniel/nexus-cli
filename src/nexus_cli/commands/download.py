@@ -1,7 +1,6 @@
 """Download command implementation."""
 
 import asyncio
-import json
 from datetime import datetime
 from pathlib import Path
 
@@ -9,85 +8,51 @@ import click
 
 from nexus_cli.client import NexusClient
 from nexus_cli.config import get_settings
+from nexus_cli.commands.search import perform_search
 
 
 @click.command()
 @click.option("--output-dir", "-o", default=".", help="Output directory for downloaded files (default: current directory)")
-@click.option("--force-search", is_flag=True, help="Force search before download")
-@click.option("--pattern", "-p", multiple=True, help="Search pattern (required with --force-search)")
-@click.option("--repository", "-r", default=None, help="Repository name (default: from NEXUS_REPOSITORY env or 'my-repo', used with --force-search)")
+@click.option("--pattern", "-p", multiple=True, required=True, help="Search pattern (supports wildcards, can be used multiple times)")
+@click.option("--repository", "-r", default=None, help="Repository name (default: from NEXUS_REPOSITORY env or 'my-repo')")
+@click.option("--debug", is_flag=True, help="Show debug information")
 @click.pass_context
-def download(ctx, output_dir: str, force_search: bool, pattern: tuple, repository: str):
-    """Download all assets based on the latest search JSON file.
+def download(ctx, output_dir: str, pattern: tuple, repository: str, debug: bool):
+    """Search and download all matching assets.
 
-    Reads the latest search_*.json file and downloads all assets.
+    First searches for assets using the specified patterns, then downloads all matches.
     Each file is saved using the last two path components.
 
     Examples:
-        # Download based on latest JSON file
-        nexus download
+        # Search and download
+        nexus download -p "MyProject/build_20250101*artifact.zip"
 
         # Download to specific path
-        nexus download -o /path/to/save
+        nexus download -o /path/to/save -p "MyProject/*artifact.zip"
 
-        # Force search before download
-        nexus download --force-search -p "MyProject/build_20250101*artifact.zip"
+        # Multiple patterns
+        nexus download -p "MyProject/*artifact.zip" -p "MyProject/*.tar.gz"
     """
-    asyncio.run(_download_async(ctx, output_dir, force_search, pattern, repository))
+    asyncio.run(_download_async(ctx, output_dir, pattern, repository, debug))
 
 
-async def _download_async(ctx, output_dir: str, force_search: bool, patterns: tuple, repository: str):
+async def _download_async(ctx, output_dir: str, patterns: tuple, repository: str, debug: bool):
     """Async implementation of download command."""
     settings = ctx.obj if ctx.obj else get_settings()
-    
+
     # Use repository from settings if not provided
     if not repository:
         repository = settings.repository
-    
+
     try:
-        # If force search is enabled
-        if force_search:
-            if not patterns:
-                click.echo("Error: --pattern is required with --force-search", err=True)
-                ctx.exit(1)
-            
-            click.echo("Running forced search...", err=True)
-            
-            # Run search
-            from nexus_cli.commands.search import _search_async as search_async
-            
-            # Create temporary context (to call search_async)
-            temp_ctx = click.Context(click.Command('search'))
-            temp_ctx.obj = settings
-            
-            await search_async(temp_ctx, repository, patterns, False)
-            click.echo("", err=True)
-        
-        # Find latest JSON file
-        tmp_dir = Path("tmp")
-        if not tmp_dir.exists():
-            click.echo("Error: tmp directory does not exist.", err=True)
-            click.echo("Please run 'nexus search' command first.", err=True)
-            ctx.exit(1)
-        
-        search_files = list(tmp_dir.glob("search_*.json"))
-        if not search_files:
-            click.echo("Error: No search result files found.", err=True)
-            click.echo("Please run 'nexus search' command first.", err=True)
-            ctx.exit(1)
-        
-        latest_file = sorted(search_files)[-1]
-        click.echo(f"Using JSON file: {latest_file}", err=True)
-        
-        # Read JSON file
-        with open(latest_file, "r", encoding="utf-8") as f:
-            assets = json.load(f)
-        
+        # Perform search first
+        assets = await perform_search(settings, repository, patterns, debug)
+
         if not assets:
-            click.echo("Error: JSON file is empty.", err=True)
+            click.echo("No assets found matching the patterns.", err=True)
             ctx.exit(1)
-        
-        click.echo(f"Files to download: {len(assets)}", err=True)
+
+        click.echo(f"Found {len(assets)} asset(s). Starting download...", err=True)
         click.echo("", err=True)
         
         # Create output directory

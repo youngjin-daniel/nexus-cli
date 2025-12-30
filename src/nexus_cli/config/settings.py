@@ -12,11 +12,12 @@ class Settings:
     Priority (highest to lowest):
     1. Explicitly provided values
     2. Environment variables
-    3. Default values
+
+    Required settings: host, repository
     """
 
-    host: str = "https://nexus.example.com"
-    repository: str = "my-repo"
+    host: str
+    repository: str
     username: Optional[str] = None
     password: Optional[str] = None
     timeout: int = 30
@@ -31,23 +32,33 @@ class Settings:
 
         Returns:
             Settings instance
+
+        Raises:
+            ValueError: If required settings (host, repository) are not provided
         """
-        # Merge settings with priority: overrides > env > defaults
+        # Merge settings with priority: overrides > env
+        host = overrides.get("host") or os.getenv("NEXUS_HOST")
+        repository = overrides.get("repository") or os.getenv("NEXUS_REPOSITORY")
+
+        # Validate required settings
+        if not host:
+            raise ValueError(
+                "NEXUS_HOST is required. "
+                "Set via --host option or NEXUS_HOST environment variable."
+            )
+        if not repository:
+            raise ValueError(
+                "NEXUS_REPOSITORY is required. "
+                "Set via --repository option or NEXUS_REPOSITORY environment variable."
+            )
+
         settings = {
-            "host": overrides.get("host")
-            or os.getenv("NEXUS_HOST")
-            or "https://nexus.example.com",
-            "repository": overrides.get("repository")
-            or os.getenv("NEXUS_REPOSITORY")
-            or "my-repo",
-            "username": overrides.get("username")
-            or os.getenv("NEXUS_USER"),
-            "password": overrides.get("password")
-            or os.getenv("NEXUS_PASS"),
+            "host": host,
+            "repository": repository,
+            "username": overrides.get("username") or os.getenv("NEXUS_USER"),
+            "password": overrides.get("password") or os.getenv("NEXUS_PASS"),
             "timeout": int(
-                overrides.get("timeout")
-                or os.getenv("NEXUS_TIMEOUT")
-                or 30
+                overrides.get("timeout") or os.getenv("NEXUS_TIMEOUT") or 30
             ),
             "verify_ssl": _str_to_bool(
                 overrides.get("verify_ssl")

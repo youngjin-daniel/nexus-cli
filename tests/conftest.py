@@ -13,6 +13,7 @@ def mock_settings():
     """Provide mock settings for testing."""
     return Settings(
         host="https://nexus.example.com",
+        repository="my-repo",
         username="testuser",
         password="testpass",
         timeout=30,

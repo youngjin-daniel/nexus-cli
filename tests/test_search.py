@@ -1,8 +1,6 @@
 """Tests for search command."""
 
-import json
-from pathlib import Path
-from unittest.mock import AsyncMock, patch, mock_open
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from click.testing import CliRunner
@@ -39,11 +37,9 @@ def sample_assets():
 
 
 def test_search_command_success(cli_runner, mock_settings, sample_assets):
-    """Test search command successfully saves results to JSON."""
+    """Test search command outputs matching paths."""
     with patch("nexus_cli.commands.search.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.search.NexusClient") as mock_client_class, \
-         patch("builtins.open", mock_open()) as mock_file, \
-         patch("pathlib.Path.mkdir"):
+         patch("nexus_cli.commands.search.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -66,8 +62,11 @@ def test_search_command_success(cli_runner, mock_settings, sample_assets):
         ])
 
         assert result.exit_code == 0
-        assert "Search started" in result.output
-        assert "Search completed!" in result.output
+        # Check that search pattern is shown
+        assert "Searching: MyProject/build_20250101*artifact.zip" in result.stderr
+        # Check that paths are displayed
+        assert "MyProject/build_20250101_120000/component-a/artifact.zip" in result.stderr
+        assert "MyProject/build_20250101_120000/component-b/artifact.zip" in result.stderr
 
 
 def test_search_command_no_pattern(cli_runner, mock_settings):
@@ -84,9 +83,7 @@ def test_search_command_no_pattern(cli_runner, mock_settings):
 def test_search_command_multiple_patterns(cli_runner, mock_settings, sample_assets):
     """Test search command with multiple patterns."""
     with patch("nexus_cli.commands.search.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.search.NexusClient") as mock_client_class, \
-         patch("builtins.open", mock_open()) as mock_file, \
-         patch("pathlib.Path.mkdir"):
+         patch("nexus_cli.commands.search.NexusClient") as mock_client_class:
 
         # Setup mocks
         mock_get_settings.return_value = mock_settings
@@ -110,4 +107,37 @@ def test_search_command_multiple_patterns(cli_runner, mock_settings, sample_asse
         ])
 
         assert result.exit_code == 0
-        assert "Search started" in result.output
+        # Check both patterns are shown
+        assert "Searching: MyProject/*artifact.zip" in result.stderr
+        assert "Searching: MyProject/*.tar.gz" in result.stderr
+
+
+def test_search_command_debug_mode(cli_runner, mock_settings, sample_assets):
+    """Test search command with debug mode."""
+    with patch("nexus_cli.commands.search.get_settings") as mock_get_settings, \
+         patch("nexus_cli.commands.search.NexusClient") as mock_client_class:
+
+        # Setup mocks
+        mock_get_settings.return_value = mock_settings
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__.return_value = mock_client_instance
+        mock_client_instance.__aexit__.return_value = AsyncMock()
+
+        # Mock search_assets
+        async def mock_search_assets(**kwargs):
+            async for item in async_iterator(sample_assets):
+                yield item
+
+        mock_client_instance.search_assets = mock_search_assets
+        mock_client_class.return_value = mock_client_instance
+
+        # Run command with debug flag
+        result = cli_runner.invoke(search, [
+            "--repository", "my-repo",
+            "--pattern", "MyProject/*artifact.zip",
+            "--debug"
+        ])
+
+        assert result.exit_code == 0
+        # Debug output should show API parameters
+        assert "[DEBUG] API parameters:" in result.stderr

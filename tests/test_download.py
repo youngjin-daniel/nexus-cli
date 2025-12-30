@@ -1,15 +1,14 @@
 """Tests for download command."""
 
-import json
 import tempfile
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, patch, mock_open
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from click.testing import CliRunner
 
 from nexus_cli.commands.download import download
+from tests.conftest import async_iterator
 
 
 @pytest.fixture
@@ -19,8 +18,8 @@ def cli_runner():
 
 
 @pytest.fixture
-def sample_search_results():
-    """Sample search results for testing."""
+def sample_assets():
+    """Sample assets for testing."""
     return [
         {
             "repository": "my-repo",
@@ -37,109 +36,94 @@ def sample_search_results():
     ]
 
 
-def test_download_command_no_tmp_dir(cli_runner, mock_settings):
-    """Test download command when tmp directory doesn't exist."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("pathlib.Path.exists", return_value=False):
-        
+def test_download_command_no_pattern(cli_runner, mock_settings):
+    """Test download command fails without pattern."""
+    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings:
         mock_get_settings.return_value = mock_settings
-        
+
+        # Run command without pattern
         result = cli_runner.invoke(download, [])
-        
-        assert result.exit_code == 1
-        assert "Error: tmp directory does not exist" in result.output
+
+        assert result.exit_code != 0
 
 
-def test_download_command_no_search_files(cli_runner, mock_settings):
-    """Test download command when no search result files exist."""
+def test_download_command_success(cli_runner, mock_settings, sample_assets):
+    """Test download command successfully searches and downloads assets."""
     with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.glob", return_value=[]):
-        
-        mock_get_settings.return_value = mock_settings
-        
-        result = cli_runner.invoke(download, [])
-        
-        assert result.exit_code == 1
-        assert "Error: No search result files found" in result.output
-
-
-def test_download_command_success(cli_runner, mock_settings, sample_search_results):
-    """Test download command successfully downloads all assets."""
-    today = datetime.now().strftime("%Y%m%d%H%M%S")
-    test_file = f"search_{today}.json"
-    
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
          patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.glob", return_value=[Path(f"tmp/{test_file}")]), \
-         patch("builtins.open", mock_open(read_data=json.dumps(sample_search_results))), \
          patch("pathlib.Path.mkdir"), \
          tempfile.TemporaryDirectory() as tmpdir:
-        
+
         # Setup mocks
         mock_get_settings.return_value = mock_settings
+        mock_perform_search.return_value = sample_assets
+
         mock_client_instance = AsyncMock()
         mock_client_instance.__aenter__.return_value = mock_client_instance
         mock_client_instance.__aexit__.return_value = AsyncMock()
         mock_client_instance.download_asset = AsyncMock()
         mock_client_class.return_value = mock_client_instance
-        
-        # Run command
-        result = cli_runner.invoke(download, ["-o", tmpdir])
-        
-        assert result.exit_code == 0
-        assert "Download completed!" in result.output
-        assert "Success: 2 file(s)" in result.output
 
-
-def test_download_command_empty_json(cli_runner, mock_settings):
-    """Test download command with empty JSON file."""
-    today = datetime.now().strftime("%Y%m%d%H%M%S")
-    test_file = f"search_{today}.json"
-    
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.glob", return_value=[Path(f"tmp/{test_file}")]), \
-         patch("builtins.open", mock_open(read_data="[]")):
-        
-        mock_get_settings.return_value = mock_settings
-        
-        result = cli_runner.invoke(download, [])
-        
-        assert result.exit_code == 1
-        assert "Error: JSON file is empty" in result.output
-
-
-def test_download_command_force_search(cli_runner, mock_settings, sample_search_results):
-    """Test download command with --force-search option."""
-    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
-         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
-         patch("nexus_cli.commands.search._search_async") as mock_search, \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.glob", return_value=[Path("tmp/search_20251229120000.json")]), \
-         patch("builtins.open", mock_open(read_data=json.dumps(sample_search_results))), \
-         patch("pathlib.Path.mkdir"), \
-         tempfile.TemporaryDirectory() as tmpdir:
-        
-        # Setup mocks
-        mock_get_settings.return_value = mock_settings
-        mock_client_instance = AsyncMock()
-        mock_client_instance.__aenter__.return_value = mock_client_instance
-        mock_client_instance.__aexit__.return_value = AsyncMock()
-        mock_client_instance.download_asset = AsyncMock()
-        mock_client_class.return_value = mock_client_instance
-        mock_search.return_value = AsyncMock()
-        
         # Run command
         result = cli_runner.invoke(download, [
-            "--force-search",
-            "-p", "MyProject/*artifact.zip",
+            "-p", "MyProject/build_20250101*artifact.zip",
             "-o", tmpdir
         ])
-        
+
         assert result.exit_code == 0
-        assert "Running forced search" in result.output
+        # Check that perform_search was called
+        assert mock_perform_search.called
+        # Check download completion message
+        assert "Download completed!" in result.stderr
+        assert "Success: 2 file(s)" in result.stderr
+
+
+def test_download_command_no_assets_found(cli_runner, mock_settings):
+    """Test download command when no assets match the pattern."""
+    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus_cli.commands.download.perform_search") as mock_perform_search:
+
+        mock_get_settings.return_value = mock_settings
+        mock_perform_search.return_value = []
+
+        # Run command
+        result = cli_runner.invoke(download, [
+            "-p", "NonExistent/*"
+        ])
+
+        assert result.exit_code == 1
+        assert "No assets found matching the patterns" in result.stderr
+
+
+def test_download_command_multiple_patterns(cli_runner, mock_settings, sample_assets):
+    """Test download command with multiple patterns."""
+    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+         patch("pathlib.Path.mkdir"), \
+         tempfile.TemporaryDirectory() as tmpdir:
+
+        # Setup mocks
+        mock_get_settings.return_value = mock_settings
+        mock_perform_search.return_value = sample_assets
+
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__.return_value = mock_client_instance
+        mock_client_instance.__aexit__.return_value = AsyncMock()
+        mock_client_instance.download_asset = AsyncMock()
+        mock_client_class.return_value = mock_client_instance
+
+        # Run command with multiple patterns
+        result = cli_runner.invoke(download, [
+            "-p", "MyProject/*artifact.zip",
+            "-p", "MyProject/*.tar.gz",
+            "-o", tmpdir
+        ])
+
+        assert result.exit_code == 0
+        # Check that perform_search was called with both patterns
+        assert mock_perform_search.called
 
 
 def test_download_command_path_extraction(cli_runner, mock_settings):
@@ -157,3 +141,59 @@ def test_download_command_path_extraction(cli_runner, mock_settings):
         relative_path = path_parts[-1] if path_parts else "unknown"
 
     assert relative_path == "component-a/file.tar.gz"
+
+
+def test_download_command_with_repository(cli_runner, mock_settings, sample_assets):
+    """Test download command with repository option."""
+    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+         patch("pathlib.Path.mkdir"), \
+         tempfile.TemporaryDirectory() as tmpdir:
+
+        # Setup mocks
+        mock_get_settings.return_value = mock_settings
+        mock_perform_search.return_value = sample_assets
+
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__.return_value = mock_client_instance
+        mock_client_instance.__aexit__.return_value = AsyncMock()
+        mock_client_instance.download_asset = AsyncMock()
+        mock_client_class.return_value = mock_client_instance
+
+        # Run command with repository option
+        result = cli_runner.invoke(download, [
+            "-r", "my-repo",
+            "-p", "MyProject/*artifact.zip",
+            "-o", tmpdir
+        ])
+
+        assert result.exit_code == 0
+
+
+def test_download_command_debug_mode(cli_runner, mock_settings, sample_assets):
+    """Test download command with debug mode."""
+    with patch("nexus_cli.commands.download.get_settings") as mock_get_settings, \
+         patch("nexus_cli.commands.download.perform_search") as mock_perform_search, \
+         patch("nexus_cli.commands.download.NexusClient") as mock_client_class, \
+         patch("pathlib.Path.mkdir"), \
+         tempfile.TemporaryDirectory() as tmpdir:
+
+        # Setup mocks
+        mock_get_settings.return_value = mock_settings
+        mock_perform_search.return_value = sample_assets
+
+        mock_client_instance = AsyncMock()
+        mock_client_instance.__aenter__.return_value = mock_client_instance
+        mock_client_instance.__aexit__.return_value = AsyncMock()
+        mock_client_instance.download_asset = AsyncMock()
+        mock_client_class.return_value = mock_client_instance
+
+        # Run command with debug flag
+        result = cli_runner.invoke(download, [
+            "-p", "MyProject/*artifact.zip",
+            "-o", tmpdir,
+            "--debug"
+        ])
+
+        assert result.exit_code == 0
